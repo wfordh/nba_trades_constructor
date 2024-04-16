@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "nba-trades-constructor"
+version = "0.1.0"
+description = ""
+authors = ["Ford Higgins <wfordh@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+nba-api = "^1.4.1"
+requests = "^2.31.0"
+bs4 = "^0.0.2"
+pandas = "^2.2.2"
+black = "^24.3.0"
+ruff = "^0.3.7"
+isort = "^5.13.2"
+streamlit = "^1.33.0"
+tqdm = "^4.66.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
