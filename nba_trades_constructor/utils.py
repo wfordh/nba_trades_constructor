@@ -15,6 +15,7 @@ headers = {
 
 NBA_SEASON = "2023-24"
 
+
 def get_taxpayer_levels():
     url = "https://basketball.realgm.com/nba/info/salary_cap"
     response = requests.get(url)
@@ -32,8 +33,7 @@ def get_taxpayer_levels():
             print(f"found the season!! {realgm_season}")
             cap_levels = {
                 td["data-th"]: int(td["rel"])
-                for td 
-                in row.find_all(lambda x: x.has_attr("data-th"))
+                for td in row.find_all(lambda x: x.has_attr("data-th"))
             }
             break
 

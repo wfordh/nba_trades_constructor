@@ -20,59 +20,69 @@ from utils import get_taxpayer_levels, team_taxpayer_status
 # https://basketball.realgm.com/nba/info/salary_cap
 
 
-def find_trades(
-    n_returning_players, 
-    total_salary, 
-    outgoing_team, 
-    team_salaries,
-    tax_levels
-):
-    outgoing_tax_status = team_salaries[outgoing_team]["tax_status"]
-    possible_trades = dict()
-    if outgoing_tax_status == "Cap Team":
+def get_max_incoming_salary(total_salary, tax_status):
+    if tax_status == "Cap Team":
         if total_salary < 6533333:
             max_incoming_salary = 1.75 * total_salary + 100000
         elif total_salary < 19600000:
             max_incoming_salary = total_salary + 5000000
         else:
             max_incoming_salary = 1.25 * total_salary + 100000
-    elif outgoing_tax_status == "Tax Team":
+    elif tax_status == "Tax Team":
         # both Tax teams and Cap teams w/ salary over $19.6M are subject
         # to this rule
         max_incoming_salary = 1.25 * total_salary + 100000
     else:
         max_incoming_salary = 1.1 * total_salary + 100000
 
+    return max_incoming_salary
+
+
+def get_min_incoming_salary(total_salary, tax_status):
+    if tax_status == "Cap Team":
+        if total_salary < 6533333:
+            min_incoming_salary = (total_salary - 100000) / 1.75
+        elif total_salary < 19600000:
+            min_incoming_salary = total_salary - 5000000
+        else:
+            min_incoming_salary = (total_salary - 100000) / 1.25
+    elif tax_status == "Tax Team":
+        min_incoming_salary = (total_salary - 100000) / 1.25
+    else:
+        # apron team
+        min_incoming_salary = (total_salary - 100000) / 1.1
+
+    return min_incoming_salary
+
+
+def find_trades(
+    n_returning_players, total_salary, outgoing_team, team_salaries, tax_levels
+):
+    outgoing_tax_status = team_salaries[outgoing_team]["tax_status"]
+    possible_trades = dict()
+    max_incoming_salary = get_max_incoming_salary(total_salary, outgoing_tax_status)
+
     for team_name, team_data in team_salaries.items():
         possible_team_deals = list()
         if team_name == outgoing_team:
             continue
-        
+
         # this logic needs to be moved to after the combinations are made
         # or it could be in both places to cut down on the number of combos?
-        if team_data["tax_status"] == "Cap Team":
-            if total_salary < 6533333:
-                min_incoming_salary = (total_salary - 100000) / 1.75
-            elif total_salary < 19600000:
-                min_incoming_salary = total_salary - 5000000
-            else:
-                min_incoming_salary = (total_salary - 100000) / 1.25
-        elif team_data["tax_status"] == "Tax Team":
-            min_incoming_salary = (total_salary - 100000) / 1.25
-        else:
-            # apron team
-            min_incoming_salary = (total_salary - 100000) / 1.1
+        min_incoming_salary = get_min_incoming_salary(
+            total_salary, team_data["tax_status"]
+        )
 
         remove_players = list()
         for player, salaries in team_data["players"].items():
             if salaries["2023_24"] > max_incoming_salary:
                 remove_players.append(player)
 
-        player_pool = {k: v for k, v in team_data["players"].items() if k not in remove_players}
+        player_pool = {
+            k: v for k, v in team_data["players"].items() if k not in remove_players
+        }
 
-        for combo in itertools.combinations(
-            player_pool.keys(), n_returning_players
-        ):
+        for combo in itertools.combinations(player_pool.keys(), n_returning_players):
             combined_salary = sum(
                 [
                     salaries["2023_24"]
@@ -80,39 +90,30 @@ def find_trades(
                     if player in combo
                 ]
             )
-            # check if team_data["total_salary"] - total_salary (rename?) 
+            # check if team_data["total_salary"] - total_salary (rename?)
             # + combined_salary changes the tax status?
             #
-            new_outgoing_team_salary = team_salaries[outgoing_team]["total_salary"] - total_salary + combined_salary
-            new_incoming_team_salary = team_data["total_salary"] + total_salary - combined_salary
-            new_outgoing_tax_status = team_taxpayer_status(new_outgoing_team_salary, tax_levels)
-            new_incoming_tax_status = team_taxpayer_status(new_incoming_team_salary, tax_levels)
-            if new_outgoing_tax_status == "Cap Team":
-                if total_salary < 6533333:
-                    max_incoming_salary = 1.75 * total_salary + 100000
-                elif total_salary < 19600000:
-                    max_incoming_salary = total_salary + 5000000
-                else:
-                    max_incoming_salary = 1.25 * total_salary + 100000
-            elif new_outgoing_tax_status == "Tax Team":
-                # both Tax teams and Cap teams w/ salary over $19.6M are subject
-                # to this rule
-                max_incoming_salary = 1.25 * total_salary + 100000
-            else:
-                max_incoming_salary = 1.1 * total_salary + 100000
+            new_outgoing_team_salary = (
+                team_salaries[outgoing_team]["total_salary"]
+                - total_salary
+                + combined_salary
+            )
+            new_incoming_team_salary = (
+                team_data["total_salary"] + total_salary - combined_salary
+            )
+            new_outgoing_tax_status = team_taxpayer_status(
+                new_outgoing_team_salary, tax_levels
+            )
+            new_incoming_tax_status = team_taxpayer_status(
+                new_incoming_team_salary, tax_levels
+            )
 
-            if new_incoming_tax_status == "Cap Team":
-                if total_salary < 6533333:
-                    min_incoming_salary = (total_salary - 100000) / 1.75
-                elif total_salary < 19600000:
-                    min_incoming_salary = total_salary - 5000000
-                else:
-                    min_incoming_salary = (total_salary - 100000) / 1.25
-            elif new_incoming_tax_status == "Tax Team":
-                min_incoming_salary = (total_salary - 100000) / 1.25
-            else:
-                # apron team
-                min_incoming_salary = (total_salary - 100000) / 1.1
+            max_incoming_salary = get_max_incoming_salary(
+                total_salary, new_outgoing_tax_status
+            )
+            min_incoming_salary = get_min_incoming_salary(
+                total_salary, new_incoming_tax_status
+            )
 
             if (combined_salary >= min_incoming_salary) and (
                 combined_salary <= max_incoming_salary
@@ -168,10 +169,9 @@ def main():
             )
         st.form_submit_button(label="Submit players")
 
-    with st.form(key='n_returning_players'):
+    with st.form(key="n_returning_players"):
         n_returning_players = st.select_slider(
-            "How many players should be coming back in the trade?",
-            options=[1, 2, 3, 4]
+            "How many players should be coming back in the trade?", options=[1, 2, 3, 4]
         )
         st.form_submit_button(label="Submit number of returning players")
 
@@ -191,7 +191,7 @@ def main():
         total_salary=total_salary,
         outgoing_team=team_input,
         team_salaries=team_salaries,
-        tax_levels=tax_levels
+        tax_levels=tax_levels,
     )
     st.write(f"Number of possible trades: {sum([len(v) for k, v in trades.items()])}")
     st.json(trades)

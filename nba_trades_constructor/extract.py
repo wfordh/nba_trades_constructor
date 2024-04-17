@@ -73,15 +73,13 @@ def main():
     for team in tqdm(team_list):
         team_data = dict()
         team_data["players"] = get_hoops_hype_salary(team, NBA_SEASON)
-        
+
         team_data["total_salary"] = sum(
-            [
-                v["2023_24"] 
-                for k, v 
-                in team_data["players"].items()
-            ]
+            [v["2023_24"] for k, v in team_data["players"].items()]
         )
-        team_data["tax_status"] = team_taxpayer_status(team_data["total_salary"], cap_levels)
+        team_data["tax_status"] = team_taxpayer_status(
+            team_data["total_salary"], cap_levels
+        )
         team_salaries[team] = team_data
 
     # json file
