@@ -15,10 +15,18 @@ import itertools
 
 import streamlit as st
 
+from utils import get_taxpayer_levels, team_taxpayer_status
+
 # https://basketball.realgm.com/nba/info/salary_cap
 
 
-def find_trades(n_returning_players, total_salary, outgoing_team, team_salaries):
+def find_trades(
+    n_returning_players, 
+    total_salary, 
+    outgoing_team, 
+    team_salaries,
+    tax_levels
+):
     outgoing_tax_status = team_salaries[outgoing_team]["tax_status"]
     possible_trades = dict()
     if outgoing_tax_status == "Cap Team":
@@ -39,10 +47,9 @@ def find_trades(n_returning_players, total_salary, outgoing_team, team_salaries)
         possible_team_deals = list()
         if team_name == outgoing_team:
             continue
-        # need to go through and create all combinations
-        # then filter after creating them?
-        # p1: $500 p2: $100
-        # check if $600 is valid
+        
+        # this logic needs to be moved to after the combinations are made
+        # or it could be in both places to cut down on the number of combos?
         if team_data["tax_status"] == "Cap Team":
             if total_salary < 6533333:
                 min_incoming_salary = (total_salary - 100000) / 1.75
@@ -73,6 +80,40 @@ def find_trades(n_returning_players, total_salary, outgoing_team, team_salaries)
                     if player in combo
                 ]
             )
+            # check if team_data["total_salary"] - total_salary (rename?) 
+            # + combined_salary changes the tax status?
+            #
+            new_outgoing_team_salary = team_salaries[outgoing_team]["total_salary"] - total_salary + combined_salary
+            new_incoming_team_salary = team_data["total_salary"] + total_salary - combined_salary
+            new_outgoing_tax_status = team_taxpayer_status(new_outgoing_team_salary, tax_levels)
+            new_incoming_tax_status = team_taxpayer_status(new_incoming_team_salary, tax_levels)
+            if new_outgoing_tax_status == "Cap Team":
+                if total_salary < 6533333:
+                    max_incoming_salary = 1.75 * total_salary + 100000
+                elif total_salary < 19600000:
+                    max_incoming_salary = total_salary + 5000000
+                else:
+                    max_incoming_salary = 1.25 * total_salary + 100000
+            elif new_outgoing_tax_status == "Tax Team":
+                # both Tax teams and Cap teams w/ salary over $19.6M are subject
+                # to this rule
+                max_incoming_salary = 1.25 * total_salary + 100000
+            else:
+                max_incoming_salary = 1.1 * total_salary + 100000
+
+            if new_incoming_tax_status == "Cap Team":
+                if total_salary < 6533333:
+                    min_incoming_salary = (total_salary - 100000) / 1.75
+                elif total_salary < 19600000:
+                    min_incoming_salary = total_salary - 5000000
+                else:
+                    min_incoming_salary = (total_salary - 100000) / 1.25
+            elif new_incoming_tax_status == "Tax Team":
+                min_incoming_salary = (total_salary - 100000) / 1.25
+            else:
+                # apron team
+                min_incoming_salary = (total_salary - 100000) / 1.1
+
             if (combined_salary >= min_incoming_salary) and (
                 combined_salary <= max_incoming_salary
             ):
@@ -86,6 +127,27 @@ def main():
     with open("data/salaries.json", "r") as infile:
         team_salaries = json.load(infile)
     teams = list(team_salaries.keys())
+    tax_levels = get_taxpayer_levels()
+
+    st.title("NBA Trades Constructor")
+
+    st.write(
+        """
+        Hello and welcome to the NBA trades constructor! This tool is for coming up
+        with all possible combinations of players for return in a trade according
+        to the NBA's salary matching rules. It does _not_ say if a trade is fair
+        or balanced, nor does it handle other trade eligibility details like no-trade
+        clauses or players who only become eligible on certain dates. At least yet.
+
+        To use it, please select a team and hit submit. Then select which players
+        to send out in the deal, with a maximum of 3, and hit submit. Lastly, select
+        the number of players you want in return for the outgoing players and hit
+        submit.
+
+        This will show you the outgoing players and their total salary and list
+        all of the possible player based trade returns, by team.
+        """
+    )
 
     with st.form(key="team_selection"):
         team_input = st.selectbox(
@@ -129,6 +191,7 @@ def main():
         total_salary=total_salary,
         outgoing_team=team_input,
         team_salaries=team_salaries,
+        tax_levels=tax_levels
     )
     st.write(f"Number of possible trades: {sum([len(v) for k, v in trades.items()])}")
     st.json(trades)

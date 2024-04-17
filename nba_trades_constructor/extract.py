@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from nba_api.stats.static import teams
 from tqdm import tqdm
-from utils import headers
+from utils import headers, get_taxpayer_levels, team_taxpayer_status, NBA_SEASON
 
 """
 {
@@ -20,45 +20,6 @@ from utils import headers
 
 skip two-way contracts: check for 'style="color:rgb(168, 0, 212)"'
 """
-
-NBA_SEASON = "2023-24"
-
-
-def get_taxpayer_levels():
-    url = "https://basketball.realgm.com/nba/info/salary_cap"
-    response = requests.get(url)
-    print(response.status_code)
-    soup = BeautifulSoup(response.content, "html.parser")
-
-    table = soup.find("table")
-    headers = table.find("thead").find_all("tr").pop()
-    body = soup.find("tbody").find_all("tr")
-    realgm_season = "-20".join(NBA_SEASON.split("-"))
-    cap_levels = None
-
-    for row in body:
-        if row.find("td", {"data-th": "Season"}).text == realgm_season:
-            print(f"found the season!! {realgm_season}")
-            cap_levels = {
-                td["data-th"]: int(td["rel"])
-                for td 
-                in row.find_all(lambda x: x.has_attr("data-th"))
-            }
-            break
-
-    return cap_levels
-
-
-def team_taxpayer_status(team_salary, cap_levels):
-    taxpayer_status = None
-    if team_salary <= cap_levels["Salary Cap"]:
-        taxpayer_status = "Cap Team"
-    elif team_salary <= cap_levels["Luxury Tax"]:
-        # ignoring apron stuff for now
-        taxpayer_status = "Tax Team"
-    else:
-        taxpayer_status = "Apron Team"
-    return taxpayer_status
 
 
 def get_hoops_hype_salary(team, season=NBA_SEASON):
