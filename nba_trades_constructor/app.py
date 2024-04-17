@@ -76,7 +76,7 @@ def find_trades(n_returning_players, total_salary, outgoing_team, team_salaries)
             if (combined_salary >= min_incoming_salary) and (
                 combined_salary <= max_incoming_salary
             ):
-                possible_team_deals.append(combo)
+                possible_team_deals.append(", ".join(combo))
         possible_trades[team_name] = possible_team_deals
 
     return possible_trades
@@ -130,8 +130,8 @@ def main():
         outgoing_team=team_input,
         team_salaries=team_salaries,
     )
-    st.write(sum([len(v) for k, v in trades.items()]))
-    st.write(trades)
+    st.write(f"Number of possible trades: {sum([len(v) for k, v in trades.items()])}")
+    st.json(trades)
 
 
 if __name__ == "__main__":
