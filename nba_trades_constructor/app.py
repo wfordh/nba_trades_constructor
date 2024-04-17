@@ -180,6 +180,13 @@ def main():
         ]
     )
     st.write(
+        """
+        The output is outgoing players and their total salary, followed by a list 
+        of all the possible player based trade returns, by team. Each line under
+        a team represents _one_ possible trade.
+        """
+    )
+    st.write(
         f"Total {team_input} salary from {', '.join(player_input)}: ${total_salary:,}"
     )
 
@@ -189,13 +196,6 @@ def main():
         outgoing_team=team_input,
         team_salaries=team_salaries,
         tax_levels=tax_levels,
-    )
-    st.write(
-        """
-        The output is outgoing players and their total salary, followed by a list 
-        of all the possible player based trade returns, by team. Each line under
-        a team represents _one_ possible trade.
-        """
     )
     st.write(f"Number of possible trades: {sum([len(v) for k, v in trades.items()])}")
     st.json(trades)
