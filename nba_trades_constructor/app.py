@@ -144,9 +144,6 @@ def main():
         to send out in the deal, with a maximum of 3, and hit submit. Lastly, select
         the number of players you want in return for the outgoing players and hit
         submit.
-
-        This will show you the outgoing players and their total salary and list
-        all of the possible player based trade returns, by team.
         """
     )
 
@@ -192,6 +189,13 @@ def main():
         outgoing_team=team_input,
         team_salaries=team_salaries,
         tax_levels=tax_levels,
+    )
+    st.write(
+        """
+        The output is outgoing players and their total salary, followed by a list 
+        of all the possible player based trade returns, by team. Each line under
+        a team represents _one_ possible trade.
+        """
     )
     st.write(f"Number of possible trades: {sum([len(v) for k, v in trades.items()])}")
     st.json(trades)
