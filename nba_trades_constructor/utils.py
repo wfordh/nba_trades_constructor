@@ -47,6 +47,8 @@ def team_taxpayer_status(team_salary, cap_levels):
     elif team_salary <= cap_levels["Luxury Tax"]:
         # ignoring apron stuff for now
         taxpayer_status = "Tax Team"
+    elif team_salary <= cap_levels["1st Apron"]:
+        taxpayer_status = "1st Apron Team"
     else:
-        taxpayer_status = "Apron Team"
+        taxpayer_status = "2nd Apron Team"
     return taxpayer_status

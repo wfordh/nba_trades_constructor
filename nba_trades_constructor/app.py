@@ -167,8 +167,10 @@ def main():
         st.form_submit_button(label="Submit players")
 
     with st.form(key="n_returning_players"):
-        n_returning_players = st.select_slider(
-            "How many players should be coming back in the trade?", options=[1, 2, 3, 4]
+        n_returning_players = st.radio(
+            "How many players should be coming back in the trade?", 
+            options=[1, 2, 3, 4],
+            horizontal=True,
         )
         st.form_submit_button(label="Submit number of returning players")
 
@@ -189,6 +191,8 @@ def main():
     st.write(
         f"Total {team_input} salary from {', '.join(player_input)}: ${total_salary:,}"
     )
+    if (team_salaries[team_input]["tax_status"] == "2nd Apron Team") and len(player_input) > 1:
+        st.write(f"WARNING - The {team_input} are a 2nd apron team and cannot aggregate outgoing salaries!")
 
     trades = find_trades(
         n_returning_players=n_returning_players,
