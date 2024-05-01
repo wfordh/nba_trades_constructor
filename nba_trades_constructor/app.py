@@ -144,6 +144,11 @@ def main():
         to send out in the deal, with a maximum of 3, and hit submit. Lastly, select
         the number of players you want in return for the outgoing players and hit
         submit.
+
+        **NOTE: The tool is still more proof-of-concept than fully-fledged. It's also
+        currently hard-coded for using salaries from the 2023-24 NBA season. For more
+        information, read this [blog post](https://fordhiggins.com/sports/2024/04/23/building_nba_trades_constructor.md)
+        or visit the [GitHub repository](https://github.com/wfordh/nba_trades_constructor/).**
         """
     )
 
