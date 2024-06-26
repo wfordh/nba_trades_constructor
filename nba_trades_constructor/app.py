@@ -19,6 +19,7 @@ from utils import get_taxpayer_levels, team_taxpayer_status
 
 # https://basketball.realgm.com/nba/info/salary_cap
 
+NBA_SEASON = "2024-25"
 
 def get_max_incoming_salary(total_salary, tax_status):
     if tax_status == "Cap Team":
@@ -58,6 +59,8 @@ def get_min_incoming_salary(total_salary, tax_status):
 def find_trades(
     n_returning_players, total_salary, outgoing_team, team_salaries, tax_levels
 ):
+    if total_salary == 0:
+        return {}
     outgoing_tax_status = team_salaries[outgoing_team]["tax_status"]
     possible_trades = dict()
     max_incoming_salary = get_max_incoming_salary(total_salary, outgoing_tax_status)
@@ -75,7 +78,7 @@ def find_trades(
 
         remove_players = list()
         for player, salaries in team_data["players"].items():
-            if salaries["2023_24"] > max_incoming_salary:
+            if salaries[NBA_SEASON] > max_incoming_salary:
                 remove_players.append(player)
 
         player_pool = {
@@ -85,7 +88,7 @@ def find_trades(
         for combo in itertools.combinations(player_pool.keys(), n_returning_players):
             combined_salary = sum(
                 [
-                    salaries["2023_24"]
+                    salaries[NBA_SEASON]
                     for player, salaries in player_pool.items()
                     if player in combo
                 ]
@@ -128,7 +131,8 @@ def main():
     with open("data/salaries.json", "r") as infile:
         team_salaries = json.load(infile)
     teams = list(team_salaries.keys())
-    tax_levels = get_taxpayer_levels()
+    tax_levels = get_taxpayer_levels(NBA_SEASON)
+    print(tax_levels)
 
     st.title("NBA Trades Constructor")
 
@@ -146,7 +150,7 @@ def main():
         submit.
 
         **NOTE: The tool is still more proof-of-concept than fully-fledged. It's also
-        currently hard-coded for using salaries from the 2023-24 NBA season. For more
+        currently hard-coded for using salaries from the 2024-25 NBA season. For more
         information, read this [blog post](https://fordhiggins.com/sports/2024/04/23/building_nba_trades_constructor.md)
         or visit the [GitHub repository](https://github.com/wfordh/nba_trades_constructor/).**
         """
@@ -162,7 +166,12 @@ def main():
 
     with st.form(key="outgoing_players"):
         if team_input:
-            players = list(team_salaries[team_input]["players"].keys())
+            players = [
+                player 
+                for player, player_salaries 
+                in team_salaries[team_input]["players"].items() 
+                if player_salaries[NBA_SEASON] > 0
+            ]
             player_input = st.multiselect(
                 "Which players would you like to include? (Max 3)",
                 options=players,
@@ -181,7 +190,7 @@ def main():
 
     total_salary = sum(
         [
-            v["2023_24"]
+            v[NBA_SEASON]
             for k, v in team_salaries[team_input]["players"].items()
             if k in player_input
         ]
